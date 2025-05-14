@@ -1,5 +1,3 @@
-import { Calendar, Home, Inbox, Search } from "lucide-react"
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,30 +9,8 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-
-// Menu items.
-const items = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Transaksi",
-    url: "/transaksi",
-    icon: Search,
-  },
-  {
-    title: "Pelanggan",
-    url: "/pelanggan",
-    icon: Inbox,
-  },
-  {
-    title: "Barang",
-    url: "/barang",
-    icon: Calendar,
-  }
-]
+import navigation from "@/lib/navigation.json"
+import { LayoutDashboard, Receipt, Users, ShoppingCart, Tag } from "lucide-react"
 
 export function AppSidebar() {
   return (
@@ -49,12 +25,16 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {navigation.map((item) => (
+                <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                      {item.icon === "dashboard" && <LayoutDashboard className="w-4 h-4" />}
+                      {item.icon === "receipt" && <Receipt className="w-4 h-4" />}
+                      {item.icon === "people" && <Users className="w-4 h-4" />}
+                      {item.icon === "shopping_cart" && <ShoppingCart className="w-4 h-4" />}
+                      {item.icon === "tag" && <Tag className="w-4 h-4" />}
+                      <span>{item.name}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

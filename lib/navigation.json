@@ -1,0 +1,33 @@
+[
+   {
+     "id": "dashboard",
+     "name": "Dashboard",
+     "url": "/dashboard",
+     "icon": "dashboard"
+   },
+   {
+     "id": "transaksi",
+     "name": "Transaksi",
+     "url": "/transaksi",
+     "icon": "receipt"
+   },
+   {
+     "id": "pelanggan",
+     "name": "Pelanggan",
+     "url": "/pelanggan",
+     "icon": "people"
+   },
+   {
+     "id": "barang",
+     "name": "Barang",
+     "url": "/barang",
+     "icon": "shopping_cart"
+   },
+   {
+     "id": "kategori",
+     "name": "Kategori",
+     "url": "/kategori",
+     "icon": "tag"
+   }
+ ]
+ 
