@@ -1,21 +1,44 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import type { IGoods } from '@/types/ksharia.interface';
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, PlusIcon } from 'lucide-react';
+import type { IGoods, IGoodsGridPagination, AddEditBarangProps } from '@/types/ksharia.interface';
+import ContentHeader from '@/components/content-header';
+import AddEditBarang from './add-edit-barang'
+import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation'
 
 export default function GoodsPage() {
-   const [goods, setGoods] = useState<IGoods[]>([]);
-   const [error, setError] = useState<string | null>(null);
-   const [currentPage, setCurrentPage] = useState<number>(1);
-   const [totalPages, setTotalPages] = useState<number>(1);
-   const itemsPerPage = 10;
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
-   useEffect(() => {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login')
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const [goods, setGoods] = useState<IGoodsGridPagination[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedBarang, setSelectedBarang] = useState<IGoods>();
+  const itemsPerPage = 10;
+
+  useEffect(() => {
     const fetchGoods = async () => {
       try {
         const response = await fetch(`/api/goods?page=${currentPage}&limit=${itemsPerPage}`);
@@ -121,19 +144,84 @@ export default function GoodsPage() {
     return items;
   };
 
+  const handleAddEdit = async (data: Partial<IGoods>) => {
+    try {
+      const url = selectedBarang 
+        ? `/api/goods/${selectedBarang.id}`
+        : '/api/goods';
+      
+      const method = selectedBarang ? 'PUT' : 'POST';
+      
+      console.log('Sending data to API:', data);
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh the goods list
+      const currentResponse = await fetch(`/api/goods?page=${currentPage}&limit=${itemsPerPage}`);
+      const currentData = await currentResponse.json();
+      setGoods(currentData.data || []);
+      setTotalPages(currentData.totalPages || 1);
+    } catch (err) {
+      console.error('Error saving goods:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save goods');
+    }
+  };
+
+  const handleEdit = (barang: IGoodsGridPagination) => {
+    setSelectedBarang({
+      ...barang,
+      category_id: barang.categories.id
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    setSelectedBarang(undefined);
+    setIsDialogOpen(true);
+  };
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Barang</h1>
+    <>
+      <ContentHeader 
+        title="Barang" 
+        button={
+          <Button variant="outline" onClick={handleAdd} className='flex items-center gap-2 hover:cursor-pointer'>
+            <PlusIcon /> Tambah
+          </Button>
+        } 
+      />
+
+      <AddEditBarang
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        barang={selectedBarang}
+        onSubmit={handleAddEdit}
+      />
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
+
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nama</TableHead>
             <TableHead>Deskripsi</TableHead>
+            <TableHead>Kategori</TableHead>
             <TableHead>Harga</TableHead>
             <TableHead>Stok</TableHead>
             <TableHead>Aksi</TableHead>
@@ -142,10 +230,11 @@ export default function GoodsPage() {
         <TableBody>
           {goods.map((item) => (
             <TableRow key={item.id}>
-              <TableCell>{item.name}</TableCell>
-              <TableCell>{item.description}</TableCell>
-              <TableCell>Rp {item.price.toLocaleString()}</TableCell>
-              <TableCell>{item.stock}</TableCell>
+              <TableCell>{item?.name}</TableCell>
+              <TableCell>{item?.description}</TableCell>
+              <TableCell>{item?.categories?.name}</TableCell>
+              <TableCell>Rp {item?.price?.toLocaleString()}</TableCell>
+              <TableCell>{item?.stock}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -154,7 +243,7 @@ export default function GoodsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleEdit(item)}>Edit</DropdownMenuItem>
                     <DropdownMenuItem>Hapus</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -182,6 +271,6 @@ export default function GoodsPage() {
           </PaginationContent>
         </Pagination>
       </div>
-    </div>
+    </>
   )
 }
